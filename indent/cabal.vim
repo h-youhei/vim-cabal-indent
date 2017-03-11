@@ -2,18 +2,21 @@ if exists('b:did_indent')
 	finish
 endif
 
-setlocal indentexpr=GetCabalIndent()
+setlocal indentexpr=CabalIndent()
 "TODO evoke indent after ': '
 setlocal indentkeys=o,O,!^F,*<Return>
 setlocal autoindent
 
-let b:undo_indent = 'setlocal'.join(
-	\[ 'indentexpr<'
-	\, 'indentkeys<'
-	\, 'autoindent<'
-	\])
+let b:undo_indent = 'setlocal
+	\ indentexpr<
+	\ indentkeys<
+	\ autoindent<
+	\'
 
-function! GetCabalIndent()
+let s:keep_indent = -1
+let s:clear_indent = 0
+
+function! CabalIndent() abort
 	let l:cur_lnum = v:lnum
 	let l:cur_line = getline(l:cur_lnum)
 	let l:pre_lnum = prevnonblank(v:lnum - 1)
@@ -21,23 +24,23 @@ function! GetCabalIndent()
 
 	if s:is_empty(l:cur_line)
 		if s:is_start_section(l:pre_line)
-			return s:inc_indent(0)
+			return shiftwidth()
 		elseif s:is_field(l:pre_line)
 			return s:align_to_element(l:pre_line)
 		else
-			return s:keep_indent()
+			return s:keep_indent
 		endif
 	else
 		if s:is_start_section(l:cur_line)
-			return 0
+			return s:clear_indent
 		elseif s:is_field(l:cur_line)
 			if s:is_in_section(l:pre_lnum)
-				return s:inc_indent(0)
+				return shiftwidth()
 			else
-				return 0
+				return s:clear_indent
 			endif
 		else
-			return s:keep_indent()
+			return s:keep_indent
 		endif
 	endif
 endfunction
@@ -65,14 +68,6 @@ function! s:is_in_section(lnum)
 	endwhile
 
 	return v:false
-endfunction
-
-function! s:inc_indent(indent)
-	return a:indent + &shiftwidth
-endfunction
-
-function! s:keep_indent()
-	return -1
 endfunction
 
 function! s:align_to_element(line)
